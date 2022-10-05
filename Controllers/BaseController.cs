@@ -37,6 +37,19 @@ public class BaseController : ControllerBase
             var Response = JsonConvert.DeserializeObject<List<string>>(Categories.Content);
 
 
+
+            var allCategories = new ChuknorResponse();
+            int Id = 1;
+            
+            foreach (var item in Response)
+            {
+                var category = new Category { category = item, Id =  Id};
+                allCategories.Categories.Add(category);
+                Id++;
+            }
+           
+
+
             if (Categories.IsSuccessful == false)
             {
                 return Ok(
@@ -52,9 +65,9 @@ public class BaseController : ControllerBase
             if (Response.Count != 0)
             {
                 return Ok(
-                    new BaseResult<IList<ChuknorResponse>>
+                    new StarWarBase<ChuknorResponse>
                     {
-                        Output = Response, 
+                        Result = allCategories, 
                         Message = ApplicationResponseCode.LoadErrorMessageByCode("200").Name,
                         StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("200").Code
 
@@ -169,84 +182,30 @@ public class BaseController : ControllerBase
             var _genral = new General();
             var columns = _genral.GetColumns();
             var match = string.Empty;
-            
-            var obj = JsonConvert.DeserializeObject<string>(query.Split(':')[0].ToString());
-            var searchQuery = JsonConvert.DeserializeObject<string>(query.Split(':')[1].ToString());
+            var obj = string.Empty;
+            var searchQuery = string.Empty;
 
-
-            if (columns.Contains(obj))
+            if (query.Contains(':'))
             {
-
-                //Check SwapApi
-                var People = await ApiMiddleWare.IRestGetAsync(_config["swapBaseUrl"], _config["People"]);
-                var Response = JsonConvert.DeserializeObject<Root>(People.Content);
-
-                var queryResult = Response.results.Where(x => x.name == searchQuery || x.hair_color == searchQuery || x.homeworld == searchQuery || x.birth_year == searchQuery || x.eye_color == searchQuery  || x.height == searchQuery || x.homeworld == searchQuery || x.mass == searchQuery || x.skin_color == searchQuery);
-               
-                if(queryResult.Count() == 0)
-                {
-                    return Ok(
-                    new StarWarBase<Root>
-                    {
-                        Result = null,
-                        Message = ApplicationResponseCode.LoadErrorMessageByCode("404").Name,
-                        StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("404").Code
-
-                    });
-
-                }
-                else
-                {
-                    return Ok(
-                      new StarWarBase<IList<Result>>
-                      {
-                          Result = queryResult.ToList(),
-                          metadata = _config["swapBaseUrl"],
-                          HasError = false,
-                          Message = ApplicationResponseCode.LoadErrorMessageByCode("200").Name,
-                          StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("200").Code
-                      });
-                }
-
-
-                if (People.IsSuccessful == false)
-                {
-                    return Ok(
-                       new StarWarBase<IList<Root>>
-                       {
-                           Result = null,
-                           HasError = true,
-                           Message = ApplicationResponseCode.LoadErrorMessageByCode("1000").Name,
-                           StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("1000").Code
-                       });
-                }
-
-                if (Response.count != 0)
-                {
-                    return Ok(
-                        new StarWarBase<Root>
-                        {
-                            Result = Response,
-                            Message = ApplicationResponseCode.LoadErrorMessageByCode("200").Name,
-                            StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("200").Code
-
-                        });
-                }
-
-                else
-                {
-                    return Ok(
-                       new StarWarBase<Root>
-                       {
-                           Result = Response,
-                           Message = ApplicationResponseCode.LoadErrorMessageByCode("200").Name,
-                           StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("200").Code
-
-                       });
-                }
+                obj = JsonConvert.DeserializeObject<string>(query.Split(':')[0].ToString());
+                searchQuery = JsonConvert.DeserializeObject<string>(query.Split(':')[1].ToString());
             }
             else
-            { 
+            {
+                searchQuery = query;
+            }
+
+
+            //Check SwapApi
+            var People = await ApiMiddleWare.IRestGetAsync(_config["swapBaseUrl"], _config["People"]);
+            var Response = JsonConvert.DeserializeObject<Root>(People.Content);
+
+            var queryResult = Response.results.Where(x => x.name == searchQuery || x.hair_color == searchQuery || x.homeworld == searchQuery || x.birth_year == searchQuery || x.eye_color == searchQuery  || x.height == searchQuery || x.homeworld == searchQuery || x.mass == searchQuery || x.skin_color == searchQuery);
+               
+            if(queryResult.Count() == 0)
+            {
+
+                //Check Chuck
                 var Categories = await ApiMiddleWare.IRestGetAsync(_config["chukBaseUrl"], _config["Categories"]);
                 var response = JsonConvert.DeserializeObject<List<string>>(Categories.Content);
 
@@ -275,8 +234,21 @@ public class BaseController : ControllerBase
                     });
                 }
 
-            
+
             }
+            else
+            {
+                return Ok(
+                    new StarWarBase<IList<Result>>
+                    {
+                        Result = queryResult.ToList(),
+                        metadata = _config["swapBaseUrl"],
+                        HasError = false,
+                        Message = ApplicationResponseCode.LoadErrorMessageByCode("200").Name,
+                        StatusCode = ApplicationResponseCode.LoadErrorMessageByCode("200").Code
+                    });
+            }
+           
         }
         catch (Exception ex)
         {
